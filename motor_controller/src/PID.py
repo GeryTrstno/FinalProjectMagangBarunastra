@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+from motor_controller.srv import PID,PIDResponse
+import rospy
+import sys
+
 class PID:
     def __init__(self, p, i, d, set_point):
         self._p = p
@@ -93,9 +101,16 @@ class PID:
         self.output_lower_bound = lower_bound
         self.output_upper_bound = upper_bound
 
+def handle_add_data_PID(req):
+    print("Initialize P: %s, I: %s, D: %s, Set Point: %s" %(req.P, req.I, req.D, req.Set_Point))
+    ObjectExample = PID(req.P, req.I, req.D, req.Set_Point)
+    return PIDResponse(ObjectExample.calculation())
 
-pid_int = PID(0.0, 0.0, 0.0, 0)
-pid_long = PID(0.0, 0.0, 0.0, 0)
-pid_float = PID(0.0, 0.0, 0.0, 0)
-pid_double = PID(0.0, 0.0, 0.0, 0)
+def add_PID_server():
+    rospy.init_node('add_PID_server')
+    s = rospy.service('add_PID', PID, handle_add_data_PID)
+    print("Ready to Initialize PID")
+    rospy.spin()
 
+if __name__ == "__main__":
+    add_PID_server()
