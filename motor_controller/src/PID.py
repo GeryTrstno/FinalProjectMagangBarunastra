@@ -2,9 +2,8 @@
 
 from __future__ import print_function
 
-from motor_controller.srv import PID,PIDResponse
+from motor_controller.srv import PID_SRV, PID_SRVResponse
 import rospy
-import sys
 
 class PID:
     def __init__(self, p, i, d, set_point):
@@ -16,6 +15,7 @@ class PID:
         self.last_error = 0
         self.last_time = 0
         self.integral_cumulation = 0
+        self.current_feedback = 0
 
         self.use_time = False
         self.use_output_bound = False
@@ -40,7 +40,6 @@ class PID:
                 self.integral_cumulation = -self.max_integral_comulation
 
         output = (current_error * self._p) + (self.integral_cumulation * self._i) + (cycle_derivative * self._d)
-
         if self.use_output_bound:
             if output > self.output_upper_bound:
                 output = self.output_upper_bound
@@ -59,7 +58,7 @@ class PID:
     def getD(self):
         return self._d
 
-    def getProportional(self):
+    def getPropotional(self):
         return self.current_error * self._p
 
     def getIntegral(self):
@@ -81,12 +80,13 @@ class PID:
         self._d = d
 
     def setTarget(self, set_point):
-        self.set_point = set_point
+        self._set_point = set_point
 
-    def setPID(self, p, i, d):
+    def setPID(self, p, i, d, set_point):
         self._p = p
         self._i = i
         self._d = d
+        self._set_point = set_point
 
     def setFeedback(self, feedback):
         self.current_feedback = feedback
@@ -101,15 +101,18 @@ class PID:
         self.output_lower_bound = lower_bound
         self.output_upper_bound = upper_bound
 
+
 def handle_add_data_PID(req):
-    print("Initialize P: %s, I: %s, D: %s, Set Point: %s" %(req.P, req.I, req.D, req.Set_Point))
-    ObjectExample = PID(req.P, req.I, req.D, req.Set_Point)
-    return PIDResponse(ObjectExample.calculation())
+    ObjectExample = PID(req.P, req.I, req.D, req.SetPoint)
+    print("Initialize P: %.2f, I: %.2f, D: %.2f, Set Point: %.2f" % (req.P, req.I, req.D, req.SetPoint))
+    output = ObjectExample.calculation()
+    print("Output: %.2f" %output)
+    return PID_SRVResponse(output)
 
 def add_PID_server():
     rospy.init_node('add_PID_server')
-    s = rospy.service('add_PID', PID, handle_add_data_PID)
-    print("Ready to Initialize PID")
+    rospy.Service('add_data_PID', PID_SRV, handle_add_data_PID)
+    print("Ready to initialize PID")
     rospy.spin()
 
 if __name__ == "__main__":
