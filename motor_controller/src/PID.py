@@ -2,7 +2,10 @@
 
 from __future__ import print_function
 
-from motor_controller.srv import PID_SRV, PID_SRVResponse
+from motor_controller.srv import PID_Initiate, PID_InitiateResponse
+from motor_controller.srv import PID_Setter, PID_SetterResponse
+from motor_controller.msg import Motor
+
 import rospy
 
 class PID:
@@ -81,8 +84,13 @@ class PID:
 
     def setTarget(self, set_point):
         self._set_point = set_point
+    
+    def setPID(self, p, i, d):
+        self._p = p
+        self._i = i
+        self._d = d
 
-    def setPID(self, p, i, d, set_point):
+    def InitializePID(self, p, i, d, set_point):
         self._p = p
         self._i = i
         self._d = d
@@ -103,17 +111,37 @@ class PID:
 
 
 def handle_add_data_PID(req):
-    ObjectExample = PID(req.P, req.I, req.D, req.SetPoint)
+    PID_Object.InitializePID(req.P, req.I, req.D, req.SetPoint)
     print("Initialize P: %.2f, I: %.2f, D: %.2f, Set Point: %.2f" % (req.P, req.I, req.D, req.SetPoint))
-    output = ObjectExample.calculation()
-    print("Output: %.2f" %output)
-    return PID_SRVResponse(output)
+    output = Motor()
+    output.Vel = PID_Object.calculation()
+
+    print("Output: %.2f" %output.Vel)
+
+    hasil = PID_InitiateResponse()
+    hasil.Output = output.Vel
+    return hasil
+
+def handle_set_data_PID(req):
+    PID_Object.setPID(req.Kp, req.Ki, req.Kd)
+    print("Setting P: %.2f, I: %.2f, D: %.2f" % (req.Kp, req.Ki, req.Kd))
+    output = Motor()
+    output.Vel = PID_Object.calculation()
+
+    print("Output: %.2f" %output.Vel)
+
+    hasil = PID_SetterResponse()
+    hasil.Output = output.Vel
+    return hasil
+
 
 def add_PID_server():
-    rospy.init_node('add_PID_server')
-    rospy.Service('add_data_PID', PID_SRV, handle_add_data_PID)
-    print("Ready to initialize PID")
+    rospy.init_node('PID_server')
+    rospy.Service('Initialize_data_PID', PID_Initiate, handle_add_data_PID)
+    rospy.Service('Set_data_PID', PID_Setter, handle_set_data_PID)
+    print("Ready to Configure PID")
     rospy.spin()
 
 if __name__ == "__main__":
+    PID_Object = PID(0, 0, 0, 0)
     add_PID_server()
