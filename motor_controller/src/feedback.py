@@ -2,35 +2,37 @@
 
 import rospy
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import TwistStamped
 from motor_controller.srv import PID_Feedback
 
-def initiate_pid(feedback):
-    rospy.wait_for_service('Set_Feedback')
-    try:
-        pid_req = rospy.ServiceProxy('Set_Feedback', PID_Feedback)
-        response = pid_req(feedback)
-        return response.newResult
-    except rospy.ServiceException as e:
-        print("Service call failed: %s" % e)
+class PIDFeedbackController:
+    def __init__(self):
+        self.pid_service = rospy.ServiceProxy('Set_Feedback', PID_Feedback)
+        self.target_position = 0.0
 
-def odometry_callback(msg):
-    # Extract the feedback data from the received odometry message
-    feedback = msg.pose.pose.position.x
+    def set_target_position(self, position):
+        self.target_position = position
 
-    # Call the service to initiate PID with the feedback data
-    initiate_pid(feedback)
+    def handle_odometry(self, msg):
+        current_position = msg.pose.pose.position.x
 
-def twist_callback(msg):
-    # Extract the feedback data from the received twistStamped message
-    feedback = msg.twist.linear.x
+        # Calculate error
+        error = self.target_position - current_position
 
-    # Call the service to initiate PID with the feedback data
-    initiate_pid(feedback)
+        # Call PID service with the error as feedback
+        try:
+            response = self.pid_service(error)
+            # Process the response if needed
+            print("PID Output:", response.output)
+        except rospy.ServiceException as e:
+            print("Service call failed:", str(e))
+
+def main():
+    rospy.init_node('pid_feedback_controller')
+    controller = PIDFeedbackController()
+    controller.set_target_position(1.0)  # Set the target position
+
+    rospy.Subscriber('mavros/global_position/local', Odometry, controller.handle_odometry)
+    rospy.spin()
 
 if __name__ == "__main__":
-    rate = rospy.Rate(10)
-    while not rospy.is_shutdown():
-        rospy.Subscriber('mavros/global_position/local', Odometry, odometry_callback)
-        rospy.Subscriber('mavros/global_position/velocity', TwistStamped, twist_callback)
-        rospy.spin()
+    main()
