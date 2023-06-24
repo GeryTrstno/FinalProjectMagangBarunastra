@@ -163,7 +163,7 @@ include_directories(
 catkin_install_python(PROGRAMS
   src/PID.py
   src/InputData.py
-  src/feedback.py
+  src/FeedBack.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
