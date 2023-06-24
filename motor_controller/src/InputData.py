@@ -18,8 +18,8 @@ def Initialize_PID_client(p, i, d, setpoint):
 def Set_PID_client(p, i, d):
     rospy.wait_for_service('Set_data_PID')
     try:
-        add_PID = rospy.ServiceProxy('Set_data_PID', PID_Setter)
-        resp1 = add_PID(p, i, d)
+        set_PID = rospy.ServiceProxy('Set_data_PID', PID_Setter)
+        resp1 = set_PID(p, i, d)
         return resp1.Output
     except rospy.ServiceException as e:
         print("Service Call Failed: %s" %e)

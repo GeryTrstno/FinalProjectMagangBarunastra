@@ -6,10 +6,10 @@ COLORS = [(0, 255, 0), (0, 0, 255), (255, 0, 0),
           (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
 class_name = []
-with open('obj.names', 'r') as f:
+with open('yolov4/obj.names', 'r') as f:
     class_name = [cname.strip() for cname in f.readlines()]
 # print(class_name)
-net = cv.dnn.readNet('yolov4-obj_3000.weights', 'yolov4-obj.cfg')
+net = cv.dnn.readNet('yolov4/backup/yolov4-obj_3000.weights', 'yolov4/yolov4-obj.cfg')
 
 model = cv.dnn_DetectionModel(net)
 model.setInputParams(size=(320, 320), scale=1/255, swapRB=True)
@@ -25,10 +25,11 @@ while True:
     classes, scores, boxes = model.detect(frame, Conf_threshold, NMS_threshold)
     for (classid, score, box) in zip(classes, scores, boxes):
         color = COLORS[int(classid) % len(COLORS)]
-        label = "%s : %f" % (class_name[classid[0]], score)
+        score = score * 100
+        label = "%s : %.2f%%" % (class_name[classid[0]], score)
         cv.rectangle(frame, box, color, 1)
         cv.putText(frame, label, (box[0], box[1]-10),
-                   cv.FONT_HERSHEY_COMPLEX, 0.3, color, 1)
+                   cv.FONT_HERSHEY_COMPLEX, 0.5, color, 1)
     endingTime = time.time() - starting_time
     fps = frame_counter/endingTime
     # print(fps)

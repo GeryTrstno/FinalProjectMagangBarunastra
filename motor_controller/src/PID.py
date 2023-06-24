@@ -4,6 +4,7 @@ from __future__ import print_function
 
 from motor_controller.srv import PID_Initiate, PID_InitiateResponse
 from motor_controller.srv import PID_Setter, PID_SetterResponse
+from motor_controller.srv import PID_Feedback, PID_FeedbackResponse
 from motor_controller.msg import Motor
 
 import rospy
@@ -19,22 +20,24 @@ class PID:
         self.last_time = 0
         self.integral_cumulation = 0
         self.current_feedback = 0
+        self.current_error = 0
+        self.cycle_derivative = 0
 
         self.use_time = False
         self.use_output_bound = False
         self.use_max_i_cum = False
 
     def calculation(self):
-        current_error = self._set_point - self.current_feedback
+        self.current_error = self._set_point - self.current_feedback
         if self.use_time:
             delta_time = self.current_time - self.last_time
-            cycle_integral = (self.last_error + current_error / 2) * delta_time
+            cycle_integral = (self.last_error + self.current_error / 2) * delta_time
             self.integral_cumulation += cycle_integral
-            cycle_derivative = (current_error - self.last_error) / delta_time
+            self.cycle_derivative = (self.current_error - self.last_error) / delta_time
             self.last_time = self.current_time
         else:
-            self.integral_cumulation += current_error
-            cycle_derivative = current_error - self.last_error
+            self.integral_cumulation += self.current_error
+            self.cycle_derivative = self.current_error - self.last_error
 
         if self.use_max_i_cum:
             if self.integral_cumulation > self.max_integral_comulation:
@@ -42,14 +45,14 @@ class PID:
             elif self.integral_cumulation < -self.max_integral_comulation:
                 self.integral_cumulation = -self.max_integral_comulation
 
-        output = (current_error * self._p) + (self.integral_cumulation * self._i) + (cycle_derivative * self._d)
+        output = (self.current_error * self._p) + (self.integral_cumulation * self._i) + (self.cycle_derivative * self._d)
         if self.use_output_bound:
             if output > self.output_upper_bound:
                 output = self.output_upper_bound
             elif output < self.output_lower_bound:
                 output = self.output_lower_bound
 
-        self.last_error = current_error
+        self.last_error = self.current_error
         return output
 
     def getP(self):
@@ -72,6 +75,9 @@ class PID:
 
     def getIntegralCum(self):
         return self.integral_cumulation
+    
+    def getFeedback(self):
+        return self.current_feedback
 
     def setP(self, p):
         self._p = p
@@ -134,11 +140,28 @@ def handle_set_data_PID(req):
     hasil.Output = output.Vel
     return hasil
 
+def handle_set_data_Feedback(req):
+    PID_Object.setFeedback(req.Feedback)
+
+    output = Motor()
+    output.Vel = PID_Object.calculation()
+    print("PID Feedback: %.2f" %PID_Object.getFeedback())
+    print("Output Vel: %.2f" %output.Vel)
+
+    hasil = PID_FeedbackResponse()
+    hasil.Output = output.Vel
+    hasil.Curr = PID_Object.getPropotional()
+    hasil.Deriv = PID_Object.getDerivative()
+    hasil.Integral = PID_Object.getIntegral()
+    return hasil
+    
+
 
 def add_PID_server():
     rospy.init_node('PID_server')
     rospy.Service('Initialize_data_PID', PID_Initiate, handle_add_data_PID)
     rospy.Service('Set_data_PID', PID_Setter, handle_set_data_PID)
+    rospy.Service('Set_Data_Feedback', PID_Feedback, handle_set_data_Feedback)
     print("Ready to Configure PID")
     rospy.spin()
 

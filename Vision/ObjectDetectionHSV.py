@@ -7,7 +7,7 @@ greenLower = (36, 10, 6)
 greenUpper = (120, 255, 255)
 
 redLower = (141, 143, 21)
-redUpper = (180, 255, 255)
+redUpper = (174, 255, 255)
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
