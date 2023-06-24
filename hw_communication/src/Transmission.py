@@ -9,10 +9,11 @@ Port = 8080
 password = "ITS"
 
 def Send_Data(message):
-    print('Kapal Siap Jalan')
+
     output = password + message
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(output.encode(), (IP, Port))
+    print("Data Sent")
     sock.close()
 
 def Receive_Data():
@@ -30,19 +31,19 @@ def Receive_Data():
             pass
 
 def Kapal_Maju():
-    return 1
+    return "2000"
 
 def Kapal_Mundur():
-    return 2
+    return "-1500"
 
 def Kapal_Kanan():
-    return 3
+    return "2000, 1000"
 
 def Kapal_Kiri():
-    return 3
+    return "1000, 2000"
 
 def Kapal_Tembak():
-    return 5
+    return "1000"
 
 if __name__ == '__main__':
     Send_Data(Kapal_Maju)
