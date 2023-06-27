@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import rospy
 from hw_communication.msg import Motor
 import socket
 
